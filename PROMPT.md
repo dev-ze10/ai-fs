@@ -48,3 +48,28 @@ Create the Auth Controller (POST /auth/register, POST /auth/login).
 Instead of a generic middleware, parse and validate req.body directly inside the controller methods using the Zod schemas (e.g., schema.parse() or schema.safeParse()), catching and returning any validation errors.
 Use bcrypt for password hashing and the exported Knex instance to insert/query the users table. Return a JWT on successful login/registration.
 Connect these controllers to an Auth router.
+
+--- 
+## Prompt 4: 
+Now, implement the Campaign routes and controllers. Ensure these are protected by the JWT middleware. Use Knex or raw SQL for queries.
+
+Endpoints:
+
+- GET /campaigns (List campaigns for the logged-in user)
+- POST /campaigns (Create a campaign, default status 'draft')
+- GET /campaigns/:id (Return campaign details + list of associated recipients)
+- PATCH /campaigns/:id (Update campaign)
+- DELETE /campaigns/:id (Delete campaign)
+- POST /campaigns/:id/schedule (Set scheduled_at)
+- POST /campaigns/:id/send (Simulate sending: update campaign status to 'sent', mark recipients as 'sent', record sent_at)
+- GET /campaigns/:id/stats (Calculate and return: total, sent, failed, opened, open_rate, send_rate)
+
+CRITICAL Server-Side Business Rules to enforce in the controllers:
+- Validation: Continue using Zod directly inside the controllers to validate req.body for the POST, PATCH, and Schedule endpoints.
+- PATCH and DELETE must explicitly check the DB and throw an error/400 if the campaign status is NOT 'draft'.
+- Scheduling: For the schedule endpoint, scheduled_at must be validated (via Zod or logic) to be a future timestamp. The send endpoint must lock the status; once 'sent', it cannot be undone.
+- Consistency: Ensure all API responses follow a consistent JSON shape (e.g., { success: boolean, data?: any, error?: string }) with proper HTTP status codes.
+
+---
+## Prompt 5
+Please implement Zod validation for route parameters in the campaign controller. Create a reusable params schema to validate the campaign ID, and update all 6 functions (show, update, remove, schedule, send, stats) to use this validation. Make sure the validation happens before the database query and returns a 400 error for invalid IDs.

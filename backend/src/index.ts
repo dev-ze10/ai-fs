@@ -1,5 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import { authRouter } from "./routes/auth.routes.js";
+import { campaignRouter } from "./routes/campaign.routes.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -11,6 +12,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/campaigns", campaignRouter);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
