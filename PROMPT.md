@@ -97,3 +97,15 @@ In the send function, update the logic to satisfy this requirement: "Simulate as
 In the create function, update the createSchema to accept an array of recipient_emails. Inside the controller, after inserting the campaign, loop through these emails. If an email exists in the recipients table, use its ID; if not, create it. Then, insert all these IDs into the campaign_recipients table with status 'pending'.
 
 Expand the test suite with more comprehensive coverage. Add tests for authentication (401s), authorization (users can't access others' campaigns), validation errors, edge cases (404s, invalid IDs), and workflow constraints. Aim for at least 10-12 test cases total covering happy paths, errors, and security.
+
+---
+## Prompt 8
+Now, let's move to the frontend part of the monorepo. We are using React 18, TypeScript, and Vite.
+Please generate the setup for state management and data fetching.
+
+Set up Axios with an interceptor to automatically attach the JWT token from localStorage/cookies to all requests.
+
+Create a Zustand store to handle user authentication state (login, logout, setToken, user info).
+
+Set up React Query (TanStack Query) provider in the main App.tsx.
+Also, provide the code for a basic App Router using react-router-dom with the following routes: /login, /campaigns, /campaigns/new, /campaigns/:id. Protect the campaign routes so they redirect to /login if unauthenticated
