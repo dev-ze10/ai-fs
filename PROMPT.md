@@ -109,3 +109,60 @@ Create a Zustand store to handle user authentication state (login, logout, setTo
 
 Set up React Query (TanStack Query) provider in the main App.tsx.
 Also, provide the code for a basic App Router using react-router-dom with the following routes: /login, /campaigns, /campaigns/new, /campaigns/:id. Protect the campaign routes so they redirect to /login if unauthenticated
+
+
+---
+## Prompt 9
+Act as an expert React developer. Now, generate the frontend pages and components using React 18, TypeScript, Vite, and Tailwind CSS. We will use react-hook-form combined with zod for strict client-side validation, and react-hot-toast (or sonner) for global error/success notifications.
+
+Please generate the code with a clean structure (src/pages, src/components/ui, src/hooks, src/api).
+
+1. Core Setup & Error Handling:
+
+Set up an Axios instance with interceptors. If an API returns 401, automatically clear the Zustand auth store and redirect to /login.
+
+Ensure all API calls have proper try/catch blocks. Extract the error message from the backend response (err.response?.data?.error or details) and display it using toast notifications.
+
+2. Page: /login
+
+Create a Zod schema (valid email, password min 6 chars).
+
+Use react-hook-form. Display inline red text errors below inputs if validation fails.
+
+Disable the submit button and show a spinner while submitting. On success, store the JWT in Zustand and redirect to /campaigns. Show a toast error if credentials fail.
+
+3. Page: /campaigns (List)
+
+Fetch data using React Query (useQuery).
+
+Display a robust Skeleton Loader while isLoading is true. Include an "Empty State" UI if there are no campaigns.
+
+Render a clean table or card list. Implement a Status Badge component (Draft = Gray, Scheduled = Blue, Sending = Yellow, Sent = Green).
+
+4. Page: /campaigns/new (Creation with strict Recipient parsing)
+
+Define a Zod schema matching the backend: name, subject, body, and recipient_emails.
+
+For recipient_emails, use a textarea where the user can paste comma or newline-separated emails. Write a custom Zod refinement or a transformation function before submission to:
+a) Split the string into an array of strings.
+b) Trim whitespace.
+c) Validate that every item in the array is a valid email format. Show an inline error (e.g., "Invalid email found: abc@.com") if any fail.
+
+On successful creation, show a success toast and navigate to the new campaign's detail page.
+
+5. Page: /campaigns/:id (Detail & Actions)
+
+Fetch campaign details and stats via React Query. Handle 404 gracefully (show "Campaign not found" and a back button).
+
+Stats Section: Display open_rate and send_rate using Tailwind-styled progress bars 
+Recipients Table: List the recipients, their individual status (pending/sent/failed), and opened time.
+
+Action Buttons (Strictly conditional):
+
+Schedule: Only show if status is 'draft'. When clicked, open a small modal with a datetime-local input. Validate that the selected time is in the future before calling the API.
+
+Send: Only show if status is 'draft'. Add a JS confirm() or a confirmation modal ("Are you sure? This cannot be undone.") before calling the API.
+
+Delete: Only show if 'draft'.
+
+After any successful action (Schedule, Send, Delete), use React Query's queryClient.invalidateQueries to refresh the data automatically and show a success toast.
