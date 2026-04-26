@@ -57,6 +57,8 @@ Endpoints:
 
 - GET /campaigns (List campaigns for the logged-in user)
 - POST /campaigns (Create a campaign, default status 'draft')
+- GET /recipient (Get Recipients)
+- POST /recipient (Create recipient)
 - GET /campaigns/:id (Return campaign details + list of associated recipients)
 - PATCH /campaigns/:id (Update campaign)
 - DELETE /campaigns/:id (Delete campaign)
@@ -73,3 +75,25 @@ CRITICAL Server-Side Business Rules to enforce in the controllers:
 ---
 ## Prompt 5
 Please implement Zod validation for route parameters in the campaign controller. Create a reusable params schema to validate the campaign ID, and update all 6 functions (show, update, remove, schedule, send, stats) to use this validation. Make sure the validation happens before the database query and returns a 400 error for invalid IDs.
+
+---
+## Prompt 6
+Write at least 3 meaningful integration tests using jest, ts-jest, and supertest for the Node.js backend. Focus strictly on the critical business logic we just implemented.
+
+Test Scenarios:
+
+- Test that a campaign CANNOT be edited (PATCH) if its status is 'sent' or 'scheduled' (Expect 400).
+
+- Test that scheduling a campaign (POST /schedule) with a past timestamp fails validation (Expect 400).
+
+- Test the /stats endpoint to ensure open_rate and send_rate are calculated correctly based on mock/seeded campaign_recipients data.
+
+---
+## Prompt 7
+Review the send and create functions in the campaign controller.
+
+In the send function, update the logic to satisfy this requirement: "Simulate asynchronous sending process, recipient can be marked as sent or failed randomly". Instead of a bulk update to 'sent', loop through the campaign_recipients, use Math.random() to determine 'sent' or 'failed' for each, and update them accordingly.
+
+In the create function, update the createSchema to accept an array of recipient_emails. Inside the controller, after inserting the campaign, loop through these emails. If an email exists in the recipients table, use its ID; if not, create it. Then, insert all these IDs into the campaign_recipients table with status 'pending'.
+
+Expand the test suite with more comprehensive coverage. Add tests for authentication (401s), authorization (users can't access others' campaigns), validation errors, edge cases (404s, invalid IDs), and workflow constraints. Aim for at least 10-12 test cases total covering happy paths, errors, and security.

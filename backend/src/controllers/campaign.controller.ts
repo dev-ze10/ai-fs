@@ -6,6 +6,7 @@ const createSchema = z.object({
   name: z.string().min(1).max(255),
   subject: z.string().min(1).max(255),
   body: z.string().min(1),
+  recipient_emails: z.array(z.string().email()).optional().default([]),
 });
 
 const updateSchema = z
@@ -31,6 +32,7 @@ const paramsSchema = z.object({
   id: z.string().uuid("Invalid campaign ID"),
 });
 
+
 async function findOwnedCampaign(id: string, userId: string) {
   return db("campaigns").where({ id, created_by: userId }).first();
 }
@@ -55,9 +57,33 @@ export async function create(req: Request, res: Response, next: NextFunction) {
       return;
     }
 
+    const { recipient_emails, ...campaignData } = parsed.data;
+
     const [campaign] = await db("campaigns")
-      .insert({ ...parsed.data, status: "draft", created_by: req.user!.id })
+      .insert({ ...campaignData, status: "draft", created_by: req.user!.id })
       .returning("*");
+
+    if (recipient_emails.length > 0) {
+      const recipientIds: string[] = [];
+
+      for (const email of recipient_emails) {
+        let recipient = await db("recipients").where({ email }).first();
+        if (!recipient) {
+          [recipient] = await db("recipients")
+            .insert({ email, name: email.split("@")[0] })
+            .returning("*");
+        }
+        recipientIds.push(recipient.id);
+      }
+
+      await db("campaign_recipients").insert(
+        recipientIds.map((recipient_id) => ({
+          campaign_id: campaign.id,
+          recipient_id,
+          status: "pending",
+        })),
+      );
+    }
 
     res.status(201).json({ success: true, data: campaign });
   } catch (err) {
@@ -218,9 +244,19 @@ export async function send(req: Request, res: Response, next: NextFunction) {
         .where({ id: campaign.id })
         .update({ status: "sent" });
 
-      await trx("campaign_recipients")
+      const recipients = await trx("campaign_recipients")
         .where({ campaign_id: campaign.id })
-        .update({ status: "sent", sent_at: now });
+        .select("id");
+
+      for (const row of recipients) {
+        const status = Math.random() < 0.8 ? "sent" : "failed";
+        await trx("campaign_recipients")
+          .where({ id: row.id })
+          .update({
+            status,
+            ...(status === "sent" && { sent_at: now }),
+          });
+      }
     });
 
     const updated = await findOwnedCampaign(campaign.id, req.user!.id);
@@ -271,3 +307,5 @@ export async function stats(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+
+

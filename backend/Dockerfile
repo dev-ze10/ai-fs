@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 
-COPY tsconfig.json knexfile.ts ./
+COPY tsconfig.json knexfile.ts jest.config.mjs ./
 COPY src ./src
 COPY migrations ./migrations
 
