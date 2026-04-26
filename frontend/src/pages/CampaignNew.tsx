@@ -7,27 +7,27 @@ import { Spinner } from "../components/ui/Spinner";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function parseEmails(raw: string): string[] {
+  return raw
+    .split(/[,\n]+/)
+    .map((e) => e.trim())
+    .filter(Boolean);
+}
+
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
   subject: z.string().min(1, "Subject is required"),
   body: z.string().min(1, "Body is required"),
-  recipient_emails_raw: z
-    .string()
-    .optional()
-    .default("")
-    .transform((val) =>
-      val
-        .split(/[,\n]+/)
-        .map((e) => e.trim())
-        .filter(Boolean),
-    )
-    .refine(
-      (emails) => emails.every((e) => emailRegex.test(e)),
-      (emails) => {
-        const invalid = emails.find((e) => !emailRegex.test(e));
-        return { message: `Invalid email found: ${invalid}` };
-      },
-    ),
+  recipient_emails_raw: z.string().refine(
+    (val) => {
+      const emails = parseEmails(val);
+      return emails.length === 0 || emails.every((e) => emailRegex.test(e));
+    },
+    (val) => {
+      const invalid = parseEmails(val).find((e) => !emailRegex.test(e));
+      return { message: `Invalid email found: ${invalid}` };
+    },
+  ),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -42,15 +42,20 @@ export function CampaignNew() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { recipient_emails_raw: "" as any },
+    defaultValues: { recipient_emails_raw: "" },
   });
 
   const onSubmit = async (data: FormData) => {
+    const recipientEmails = (data.recipient_emails_raw || "")
+      .split(/[,\n]+/)
+      .map((e) => e.trim())
+      .filter(Boolean);
+
     const campaign = await mutation.mutateAsync({
       name: data.name,
       subject: data.subject,
       body: data.body,
-      recipient_emails: data.recipient_emails_raw as unknown as string[],
+      recipient_emails: recipientEmails,
     });
     navigate(`/campaigns/${campaign.id}`);
   };
